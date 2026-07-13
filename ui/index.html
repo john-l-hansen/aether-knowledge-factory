@@ -40,8 +40,14 @@
           <span class="nav-icon">⏳</span> Pending Review
           <span class="badge" id="drafts-count">0</span>
         </button>
+        <button class="nav-item" data-tab="ingest">
+          <span class="nav-icon">📥</span> Raw Ingestion
+        </button>
         <button class="nav-item" data-tab="generator">
-          <span class="nav-icon">⚡</span> Content Generator
+          <span class="nav-icon">⚡</span> Content Assembly
+        </button>
+        <button class="nav-item" data-tab="publications">
+          <span class="nav-icon">🚀</span> Webflow Publishing
         </button>
       </nav>
     </aside>
@@ -51,7 +57,7 @@
       <div class="tab-content active" id="tab-knowledge">
         <div class="panel-header">
           <h2>Active Knowledge Base</h2>
-          <p> Evergreen structured concepts, insights, and facts committed to Git.</p>
+          <p>Evergreen structured concepts, insights, and facts committed to Git.</p>
         </div>
         <div class="filters">
           <button class="filter-btn active" data-type="all">All</button>
@@ -75,22 +81,68 @@
         </div>
       </div>
 
+      <!-- Raw Ingestion Tab -->
+      <div class="tab-content" id="tab-ingest">
+        <div class="panel-header">
+          <h2>Ingest Raw Text & Insights</h2>
+          <p>Paste raw playbooks, guides, or transcript text below to extract atomic knowledge units.</p>
+        </div>
+        <div class="generator-box">
+          <div class="form-group">
+            <label for="ingest-text">Raw Text Material</label>
+            <textarea id="ingest-text" rows="10" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 0.9rem;" placeholder="Paste raw notes here..."></textarea>
+          </div>
+          <button class="btn btn-primary" id="btn-run-ingest">Extract Knowledge Units</button>
+        </div>
+        <div class="run-output-box" id="ingest-output" style="display: none;">
+          <h3>Ingestion Logs</h3>
+          <pre id="ingest-output-text"></pre>
+        </div>
+      </div>
+
       <!-- Content Generator Tab -->
       <div class="tab-content" id="tab-generator">
         <div class="panel-header">
           <h2>Assembly & Pipeline Orchestration</h2>
           <p>Initiate content briefing and copywriter assembly stages using active knowledge.</p>
         </div>
-        <div class="generator-box">
+        
+        <div class="generator-box" id="generator-stage-1">
           <div class="form-group">
             <label for="generator-topic">Content Topic</label>
             <input type="text" id="generator-topic" placeholder="e.g., The Future of AI in Creative Design" value="AI Design workflows">
           </div>
-          <button class="btn btn-primary" id="btn-run-brief">Generate Content Brief (Stage 1)</button>
+          <button class="btn btn-primary" id="btn-run-brief">Compile Content Brief (Stage 1)</button>
         </div>
+
+        <div class="generator-box" id="generator-stage-2" style="display: none;">
+          <h3>Grounded Content Brief</h3>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">Verify outline and click Approve to generate copy.</p>
+          <pre id="brief-json-display" style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.8rem; margin-bottom: 1rem; max-height: 250px; overflow-y: auto; color: #60a5fa;"></pre>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn" id="btn-approve-brief">Approve Brief</button>
+            <button class="btn btn-secondary" id="btn-run-write" disabled>Assemble Article (Stage 2)</button>
+          </div>
+        </div>
+
         <div class="run-output-box" id="generation-output" style="display: none;">
           <h3>Pipeline Output</h3>
           <pre id="output-text"></pre>
+        </div>
+      </div>
+
+      <!-- Publications & Webflow Tab -->
+      <div class="tab-content" id="tab-publications">
+        <div class="panel-header">
+          <h2>Grounded Publications & Live Deployments</h2>
+          <p>View finished articles generated under the dist/ directory. Click to publish directly to your live Webflow site.</p>
+        </div>
+        <div class="card-grid" id="publications-grid">
+          <!-- Dynamically populated -->
+        </div>
+        <div class="run-output-box" id="publish-output" style="display: none; margin-top: 2rem;">
+          <h3>Publishing Logs</h3>
+          <pre id="publish-output-text"></pre>
         </div>
       </div>
     </section>
