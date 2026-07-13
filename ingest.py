@@ -7,8 +7,9 @@ import yaml
 from google.antigravity import Agent
 
 # Import factory modules
-from factory.agents import get_curator_config
+from factory.agents import get_curator_config, get_merger_config
 from factory.utils.validation import clean_json_content, validate_data
+from factory.utils.retrieval import detect_similar_unit
 
 async def run_ingestion(source_path: str):
     if not os.path.exists(source_path):
@@ -48,10 +49,39 @@ async def run_ingestion(source_path: str):
         print(f"❌ Expected a JSON array, got: {type(extracted_units).__name__}")
         sys.exit(1)
 
-    print(f"\n📂 Parsing and validating {len(extracted_units)} knowledge units...")
+    print(f"\n📂 Processing {len(extracted_units)} knowledge units...")
     
     success_count = 0
     for idx, unit in enumerate(extracted_units):
+        # Check for similarity with existing units
+        existing_unit = detect_similar_unit(unit)
+        
+        if existing_unit:
+            print(f"\n🔄 Conflict Detected: Proposed unit [{unit.get('id')}] overlaps with existing active unit [{existing_unit.get('id')}]!")
+            print("🧠 Spawning Merger Agent to consolidate concepts...")
+            
+            merger_config = get_merger_config()
+            async with Agent(merger_config) as merger:
+                prompt = (
+                    f"Existing Active Unit:\n"
+                    f"```json\n{json.dumps(existing_unit, indent=2)}\n```\n\n"
+                    f"Newly Proposed Unit:\n"
+                    f"```json\n{json.dumps(unit, indent=2)}\n```\n\n"
+                    f"Merge these two units into a single consolidated JSON unit. Eliminate redundancies."
+                )
+                
+                raw_merge = ""
+                response = await merger.chat(prompt)
+                async for token in response:
+                    raw_merge += token
+                    
+            cleaned_merge = clean_json_content(raw_merge)
+            try:
+                unit = json.loads(cleaned_merge)
+                print("✅ Successfully merged units!")
+            except json.JSONDecodeError as e:
+                print(f"⚠️ Warning: Failed to parse merged unit as JSON: {e}. Defaulting to proposed unit.")
+                
         # Inject status field
         unit["status"] = "review_pending"
 
@@ -67,15 +97,12 @@ async def run_ingestion(source_path: str):
 
         # Build file content: YAML frontmatter + markdown content
         meta_to_write = {k: v for k, v in unit.items() if k != "content"}
-        
-        # Format YAML blocks neatly
         yaml_frontmatter = yaml.safe_dump(meta_to_write, sort_keys=False, default_flow_style=False).strip()
         
         file_name = f"{unit['id']}.md"
         file_path = os.path.join(target_dir, file_name)
         
         file_content = f"---\n{yaml_frontmatter}\n---\n\n{unit['content'].strip()}\n"
-        
         with open(file_path, "w", encoding="utf-8") as out_f:
             out_f.write(file_content)
             

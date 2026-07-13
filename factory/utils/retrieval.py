@@ -68,3 +68,38 @@ def get_knowledge_unit_by_id(unit_id: str, base_dir: str = "knowledge") -> Optio
         if unit.get("id") == unit_id:
             return unit
     return None
+
+def detect_similar_unit(new_unit: Dict[str, Any], base_dir: str = "knowledge") -> Optional[Dict[str, Any]]:
+    """Detects if a similar knowledge unit already exists in active storage.
+    
+    Matches by exact ID, or a high token overlap (> 70%) in title.
+    """
+    new_id = new_unit.get("id")
+    new_title = new_unit.get("title", "")
+    new_title_tokens = set(re.findall(r"\w+", new_title.lower()))
+    
+    units = load_all_knowledge_units(base_dir)
+    for unit in units:
+        # Ignore draft folder items to check only active storage
+        # Load all knowledge units defaults to scanning the base_dir.
+        # But wait, we should skip units that are still drafts
+        if unit.get("status") == "review_pending":
+            continue
+            
+        if unit.get("id") == new_id:
+            return unit
+            
+        # Check title similarity
+        existing_title = unit.get("title", "")
+        ex_title_tokens = set(re.findall(r"\w+", existing_title.lower()))
+        if not new_title_tokens or not ex_title_tokens:
+            continue
+            
+        overlap = len(new_title_tokens.intersection(ex_title_tokens))
+        union = len(new_title_tokens.union(ex_title_tokens))
+        similarity = overlap / union
+        
+        if similarity >= 0.70:
+            return unit
+            
+    return None
