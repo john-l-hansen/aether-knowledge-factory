@@ -61,3 +61,9 @@ def parse_markdown_frontmatter(file_path: str) -> Tuple[Dict[str, Any], str]:
         return metadata, markdown_body
     
     return {}, content
+
+import markdown
+
+def convert_markdown_to_html(md_content: str) -> str:
+    """Converts standard markdown text to clean HTML string format."""
+    return markdown.markdown(md_content)
