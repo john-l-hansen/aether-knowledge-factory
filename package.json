@@ -1,13 +1,14 @@
 {
-  "name": "aether-knowledge-factory-ui",
+  "name": "aether-knowledge-factory",
   "version": "1.0.0",
-  "description": "Aether Knowledge Factory Dashboard UI Static App",
-  "main": "ui/index.html",
+  "description": "Aether Knowledge Factory Dashboard static UI running on Astro",
   "scripts": {
-    "build": "echo 'Building static web dashboard...'",
-    "start": "npx -y serve -p $PORT ui"
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
   },
-  "engines": {
-    "node": ">=18"
+  "dependencies": {
+    "astro": "^4.16.0"
   }
 }
