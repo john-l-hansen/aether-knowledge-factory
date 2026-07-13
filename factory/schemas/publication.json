@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Publication",
+  "type": "object",
+  "properties": {
+    "title": { "type": "string" },
+    "author": { "type": "string" },
+    "publish_date": { "type": "string", "format": "date-time" },
+    "excerpt": { "type": "string" },
+    "target_channel": { "type": "string", "enum": ["blog", "faq", "page"] },
+    "referenced_knowledge_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "content_body": { "type": "string" }
+  },
+  "required": ["title", "author", "publish_date", "excerpt", "target_channel", "referenced_knowledge_ids", "content_body"]
+}

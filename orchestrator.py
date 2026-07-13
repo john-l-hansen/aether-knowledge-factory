@@ -2,11 +2,13 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import sys
+import yaml
 from google.antigravity import Agent
 
 # Import factory modules
-from factory.agents import get_researcher_config, get_copywriter_config
+from factory.agents import get_researcher_config, get_copywriter_config, get_publisher_config
 from factory.utils.validation import clean_json_content, validate_data
 from factory.utils.retrieval import retrieve_relevant_units, get_knowledge_unit_by_id
 
@@ -75,8 +77,15 @@ async def run_stage_brief(topic: str, output_file: str):
         print(raw_brief)
         sys.exit(1)
 
+def slugify(text: str) -> str:
+    """Utility to turn titles into clean kebab-case slugs."""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_-]+", "-", text)
+    return text
+
 async def run_stage_write(brief_path: str):
-    print(f"🚀 [Stage 2: Writing] Loading brief from: {brief_path}")
+    print(f"🚀 [Stage 2: Writing & Distribution] Loading brief from: {brief_path}")
     if not os.path.exists(brief_path):
         print(f"❌ Brief file not found: {brief_path}")
         sys.exit(1)
@@ -90,7 +99,7 @@ async def run_stage_write(brief_path: str):
         print(f"❌ Brief Schema Validation Failed: {err_msg}")
         sys.exit(1)
 
-    # Verify status (warn if still review_pending, but allow continuing if user runs the command)
+    # Verify status
     if brief_data.get("status") == "review_pending":
         print("⚠️ Warning: brief status is 'review_pending'. Writing copy anyway as requested.")
 
@@ -115,8 +124,9 @@ async def run_stage_write(brief_path: str):
 
     referenced_context_str = json.dumps(referenced_contents, indent=2)
 
-    # Spawn Copywriter Agent
+    # 1. Spawn Copywriter Agent to generate raw draft
     writer_config = get_copywriter_config()
+    raw_draft = ""
     async with Agent(writer_config) as writer:
         print("\n✍️ Querying Copywriter Agent to draft copy...")
         prompt = (
@@ -127,15 +137,61 @@ async def run_stage_write(brief_path: str):
             f"Write the final draft copy. Ensure all statements are strictly aligned with the Grounded Knowledge Contents."
         )
         
-        draft = ""
         response = await writer.chat(prompt)
         async for token in response:
-            draft += token
+            raw_draft += token
             sys.stdout.write(token)
             sys.stdout.flush()
         print()
 
-    print("\n✅ Grounded Content writing completed successfully!")
+    # 2. Spawn Publisher Agent to package & structure the publication
+    print("\n📦 Structuring publication package using Publisher Agent...")
+    publisher_config = get_publisher_config()
+    raw_pub = ""
+    async with Agent(publisher_config) as publisher:
+        prompt = (
+            f"Original Brief:\n"
+            f"```json\n{json.dumps(brief_data, indent=2)}\n```\n\n"
+            f"Copywriter Raw Draft:\n"
+            f"```markdown\n{raw_draft}\n```\n\n"
+            f"Please structure this into a valid Publication JSON object matching the requested schema."
+        )
+        response = await publisher.chat(prompt)
+        async for token in response:
+            raw_pub += token
+
+    # Clean and validate publication JSON
+    cleaned_pub_str = clean_json_content(raw_pub)
+    try:
+        pub_data = json.loads(cleaned_pub_str)
+        is_valid, err_msg = validate_data(pub_data, "publication")
+        if not is_valid:
+            print(f"❌ Publication Schema Validation Failed: {err_msg}")
+            sys.exit(1)
+        print("✅ Publication Schema Validation Succeeded!")
+    except json.JSONDecodeError as e:
+        print(f"❌ Failed to parse Publication as JSON: {e}")
+        print("Raw publication structure was:")
+        print(raw_pub)
+        sys.exit(1)
+
+    # 3. Export to dist/
+    target_channel = pub_data["target_channel"] # blog, faq, page
+    dist_dir = os.path.join("dist", f"{target_channel}s")
+    os.makedirs(dist_dir, exist_ok=True)
+
+    # Build frontmatter and content body
+    meta_to_write = {k: v for k, v in pub_data.items() if k != "content_body"}
+    yaml_frontmatter = yaml.safe_dump(meta_to_write, sort_keys=False, default_flow_style=False).strip()
+    
+    slug = slugify(pub_data["title"])
+    output_file = os.path.join(dist_dir, f"{slug}.md")
+    
+    file_content = f"---\n{yaml_frontmatter}\n---\n\n{pub_data['content_body'].strip()}\n"
+    with open(output_file, "w", encoding="utf-8") as out_f:
+        out_f.write(file_content)
+
+    print(f"\n🎉 Grounded Content published successfully to: {output_file}")
 
 def main():
     parser = argparse.ArgumentParser(description="Aether Content Factory Orchestrator CLI.")
