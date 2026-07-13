@@ -1,11 +1,11 @@
 {
-  "name": "aether-knowledge-factory",
+  "name": "aether-knowledge-factory-ui",
   "version": "1.0.0",
-  "description": "Aether Knowledge Factory Dashboard",
-  "main": "dashboard_server.py",
+  "description": "Aether Knowledge Factory Dashboard UI Static App",
+  "main": "ui/index.html",
   "scripts": {
-    "build": "pip3 install -r requirements.txt",
-    "start": "python3 dashboard_server.py"
+    "build": "echo 'Building static web dashboard...'",
+    "start": "npx -y serve -p $PORT ui"
   },
   "engines": {
     "node": ">=18"

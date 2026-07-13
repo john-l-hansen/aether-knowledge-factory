@@ -1,3 +1,7 @@
+const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? ""
+  : (localStorage.getItem("AETHER_API_URL") || "https://aether-knowledge-factory.onrender.com");
+
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
   fetchKnowledge();
@@ -39,7 +43,7 @@ async function fetchKnowledge() {
   grid.innerHTML = "<div class='loading'>Loading active repository...</div>";
 
   try {
-    const res = await fetch("/api/knowledge");
+    const res = await fetch(`${API_BASE}/api/knowledge`);
     const data = await res.json();
     window.knowledgeData = data;
     renderKnowledge(data);
@@ -95,7 +99,7 @@ async function fetchDrafts() {
   grid.innerHTML = "<div class='loading'>Loading pending drafts...</div>";
 
   try {
-    const res = await fetch("/api/drafts");
+    const res = await fetch(`${API_BASE}/api/drafts`);
     const data = await res.json();
     countBadge.textContent = data.length;
     renderDrafts(data);
@@ -136,7 +140,7 @@ function renderDrafts(drafts) {
 // Approve Draft Action
 async function approveDraft(id) {
   try {
-    const res = await fetch(`/api/approve?id=${id}`, { method: "POST" });
+    const res = await fetch(`${API_BASE}/api/approve?id=${id}`, { method: "POST" });
     const result = await res.json();
     if (result.success) {
       fetchKnowledge();
@@ -169,7 +173,7 @@ function initIngest() {
     ingestOutputText.textContent = "🧠 Processing raw input...\n";
 
     try {
-      const res = await fetch("/api/ingest", {
+      const res = await fetch(`${API_BASE}/api/ingest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })
@@ -213,7 +217,7 @@ function initGenerator() {
     outputText.textContent = "🚀 Starting briefing agent...\n";
 
     try {
-      const res = await fetch(`/api/generate?topic=${encodeURIComponent(topic)}`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/generate?topic=${encodeURIComponent(topic)}`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
         outputText.textContent += `\nLogs:\n${data.logs}\n\n`;
@@ -233,7 +237,7 @@ function initGenerator() {
   approveBriefBtn.onclick = async () => {
     approveBriefBtn.disabled = true;
     try {
-      const res = await fetch("/api/brief/approve", { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/brief/approve`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
         alert("Brief approved successfully!");
@@ -256,7 +260,7 @@ function initGenerator() {
     outputText.textContent = "✍️ Querying Copywriter and Publisher agents...\n";
 
     try {
-      const res = await fetch("/api/write", { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/write`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
         outputText.textContent += `\nLogs:\n${data.logs}\n\n🎉 Success! Article assembled and saved under 'Webflow Publishing'.`;
@@ -280,7 +284,7 @@ async function checkCurrentBrief() {
   const runWriteBtn = document.getElementById("btn-run-write");
 
   try {
-    const res = await fetch("/api/brief");
+    const res = await fetch(`${API_BASE}/api/brief`);
     const data = await res.json();
     if (data.topic) {
       container.style.display = "block";
@@ -306,7 +310,7 @@ async function fetchPublications() {
   grid.innerHTML = "<div class='loading'>Loading publications...</div>";
 
   try {
-    const res = await fetch("/api/publications");
+    const res = await fetch(`${API_BASE}/api/publications`);
     const data = await res.json();
     renderPublications(data);
   } catch (err) {
@@ -350,7 +354,7 @@ async function publishPublication(filePath) {
   outputText.textContent = `🚀 Publishing ${filePath} to live Webflow CMS...\n`;
 
   try {
-    const res = await fetch(`/api/publish?file=${encodeURIComponent(filePath)}`, { method: "POST" });
+    const res = await fetch(`${API_BASE}/api/publish?file=${encodeURIComponent(filePath)}`, { method: "POST" });
     const data = await res.json();
     if (data.success) {
       outputText.textContent += `\nLogs:\n${data.logs}\n\n🎉 Done! Content successfully published to live Webflow collection.`;
