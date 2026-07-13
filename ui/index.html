@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aether Knowledge Factory — Dashboard</title>
+  <link rel="stylesheet" href="/ui/app.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="glass-bg"></div>
+
+  <header class="app-header">
+    <div class="brand-container">
+      <span class="brand-logo">Æ</span>
+      <div class="brand-text">
+        <h1>AETHER</h1>
+        <p>KNOWLEDGE OPERATING SYSTEM</p>
+      </div>
+    </div>
+    <div class="status-indicator">
+      <span class="pulse-dot"></span>
+      <span class="status-text">Factory Active</span>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <aside class="sidebar">
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="knowledge">
+          <span class="nav-icon">📁</span> Active Repository
+        </button>
+        <button class="nav-item" data-tab="drafts">
+          <span class="nav-icon">⏳</span> Pending Review
+          <span class="badge" id="drafts-count">0</span>
+        </button>
+        <button class="nav-item" data-tab="generator">
+          <span class="nav-icon">⚡</span> Content Generator
+        </button>
+      </nav>
+    </aside>
+
+    <section class="content-panel">
+      <!-- Active Knowledge Repository Tab -->
+      <div class="tab-content active" id="tab-knowledge">
+        <div class="panel-header">
+          <h2>Active Knowledge Base</h2>
+          <p> Evergreen structured concepts, insights, and facts committed to Git.</p>
+        </div>
+        <div class="filters">
+          <button class="filter-btn active" data-type="all">All</button>
+          <button class="filter-btn" data-type="concept">Concepts</button>
+          <button class="filter-btn" data-type="insight">Insights</button>
+          <button class="filter-btn" data-type="fact">Facts</button>
+        </div>
+        <div class="card-grid" id="knowledge-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Pending Reviews Tab -->
+      <div class="tab-content" id="tab-drafts">
+        <div class="panel-header">
+          <h2>Draft Staging & Approvals</h2>
+          <p>Ingested raw items pending human-in-the-loop review. Click approve to promote to active storage.</p>
+        </div>
+        <div class="card-grid" id="drafts-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Content Generator Tab -->
+      <div class="tab-content" id="tab-generator">
+        <div class="panel-header">
+          <h2>Assembly & Pipeline Orchestration</h2>
+          <p>Initiate content briefing and copywriter assembly stages using active knowledge.</p>
+        </div>
+        <div class="generator-box">
+          <div class="form-group">
+            <label for="generator-topic">Content Topic</label>
+            <input type="text" id="generator-topic" placeholder="e.g., The Future of AI in Creative Design" value="AI Design workflows">
+          </div>
+          <button class="btn btn-primary" id="btn-run-brief">Generate Content Brief (Stage 1)</button>
+        </div>
+        <div class="run-output-box" id="generation-output" style="display: none;">
+          <h3>Pipeline Output</h3>
+          <pre id="output-text"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/ui/app.js"></script>
+</body>
+</html>
