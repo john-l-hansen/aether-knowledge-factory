@@ -1,6 +1,6 @@
 const API_BASE = window.location.port === "8000"
   ? ""
-  : (localStorage.getItem("AETHER_API_URL") || "http://localhost:8000");
+  : (localStorage.getItem("AETHER_API_URL") || "https://aether-knowledge-factory.onrender.com");
 
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
