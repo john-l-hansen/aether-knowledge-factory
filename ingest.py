@@ -52,15 +52,17 @@ async def run_ingestion(source_path: str):
     
     success_count = 0
     for idx, unit in enumerate(extracted_units):
+        # Inject status field
+        unit["status"] = "review_pending"
+
         # Validate against the knowledge_unit schema
         is_valid, err_msg = validate_data(unit, "knowledge_unit")
         if not is_valid:
             print(f"⚠️ Skip Unit [{idx}]: {err_msg}")
             continue
 
-        # Determine subfolder based on the unit type
-        unit_type = unit["type"] # concept, insight, fact
-        target_dir = os.path.join("knowledge", f"{unit_type}s")
+        # Force save to drafts folder for Human-in-the-Loop review
+        target_dir = os.path.join("knowledge", "drafts")
         os.makedirs(target_dir, exist_ok=True)
 
         # Build file content: YAML frontmatter + markdown content
@@ -77,7 +79,7 @@ async def run_ingestion(source_path: str):
         with open(file_path, "w", encoding="utf-8") as out_f:
             out_f.write(file_content)
             
-        print(f"✅ Saved: {file_path}")
+        print(f"✅ Saved Draft: {file_path}")
         success_count += 1
 
     print(f"\n🎉 Ingestion completed. Successfully processed {success_count}/{len(extracted_units)} units.")

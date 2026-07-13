@@ -1,5 +1,7 @@
+import argparse
 import asyncio
 import json
+import os
 import sys
 from google.antigravity import Agent
 
@@ -8,24 +10,21 @@ from factory.agents import get_researcher_config, get_copywriter_config
 from factory.utils.validation import clean_json_content, validate_data
 from factory.utils.retrieval import retrieve_relevant_units, get_knowledge_unit_by_id
 
-async def run_content_pipeline(topic: str):
-    print(f"🚀 Initializing Aether Content Factory for topic: '{topic}'...\n")
-
-    # 1. Retrieve relevant knowledge units from our database
-    print("🔍 Step 1: Querying local knowledge repository...")
-    relevant_units = retrieve_relevant_units(topic, limit=3)
+async def run_stage_brief(topic: str, output_file: str):
+    print(f"🚀 [Stage 1: Briefing] topic: '{topic}'")
     
+    # 1. Retrieve knowledge units
+    print("🔍 Scanning knowledge repository...")
+    relevant_units = retrieve_relevant_units(topic, limit=3)
     if not relevant_units:
-        print("⚠️ Warning: No relevant knowledge units found matching the topic.")
-        print("Pipeline requires curated knowledge to ground the research. Please run ingest.py first.")
+        print("⚠️ Warning: No active, relevant knowledge units found matching the topic.")
+        print("Pipeline requires approved, active knowledge units. Please run approve.py first.")
         sys.exit(1)
         
     print(f"✅ Found {len(relevant_units)} relevant knowledge unit(s):")
     for unit in relevant_units:
-        print(f" - [{unit['id']}] {unit['title']} (Confidence: {unit['confidence']})")
-    print()
+        print(f" - [{unit['id']}] {unit['title']}")
 
-    # Format the knowledge units to inject into the researcher prompt
     knowledge_context_str = json.dumps([
         {
             "id": u["id"],
@@ -36,11 +35,10 @@ async def run_content_pipeline(topic: str):
         } for u in relevant_units
     ], indent=2)
 
-    # 2. Spawn the Researcher Agent to compile a grounded content brief
+    # 2. Spawning Researcher agent
     researcher_config = get_researcher_config()
     async with Agent(researcher_config) as researcher:
-        print("🧠 Step 2: Compiling grounded Content Brief...")
-        
+        print("\n🧠 Querying Researcher Agent to compile brief...")
         prompt = (
             f"Retrieved Knowledge Units:\n"
             f"```json\n{knowledge_context_str}\n```\n\n"
@@ -52,11 +50,7 @@ async def run_content_pipeline(topic: str):
         response = await researcher.chat(prompt)
         async for token in response:
             raw_brief += token
-        
-    print("\n--- Raw Brief Received ---")
-    print(raw_brief[:500] + "\n...[Brief Truncated for Output]\n")
 
-    # Clean and validate the brief structure
     cleaned_brief_str = clean_json_content(raw_brief)
     try:
         brief_data = json.loads(cleaned_brief_str)
@@ -64,20 +58,49 @@ async def run_content_pipeline(topic: str):
         if not is_valid:
             print(f"❌ Brief Validation Failed: {err_msg}")
             sys.exit(1)
-        print("✅ Brief Schema Validation Succeeded!")
+            
+        # Append status metadata
+        brief_data["status"] = "review_pending"
+        
+        # Save draft brief to disk
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(brief_data, f, indent=2)
+            
+        print(f"\n✅ Content Brief generated successfully and saved to: {output_file}")
+        print("👉 Please review the brief details. Once approved, run the pipeline with `--stage write`.")
     except json.JSONDecodeError as e:
         print(f"❌ Failed to parse Brief as JSON: {e}")
         print("Raw brief structure was:")
         print(raw_brief)
         sys.exit(1)
 
-    # 3. Gather full details of all referenced knowledge units specified in the brief
+async def run_stage_write(brief_path: str):
+    print(f"🚀 [Stage 2: Writing] Loading brief from: {brief_path}")
+    if not os.path.exists(brief_path):
+        print(f"❌ Brief file not found: {brief_path}")
+        sys.exit(1)
+        
+    with open(brief_path, "r", encoding="utf-8") as f:
+        brief_data = json.load(f)
+
+    # Validate brief schema
+    is_valid, err_msg = validate_data(brief_data, "content_brief")
+    if not is_valid:
+        print(f"❌ Brief Schema Validation Failed: {err_msg}")
+        sys.exit(1)
+
+    # Verify status (warn if still review_pending, but allow continuing if user runs the command)
+    if brief_data.get("status") == "review_pending":
+        print("⚠️ Warning: brief status is 'review_pending'. Writing copy anyway as requested.")
+
+    # Load details of referenced knowledge units
     referenced_ids = set()
     for section in brief_data.get("outline", []):
         for ref_id in section.get("referenced_knowledge_ids", []):
             referenced_ids.add(ref_id)
             
-    print(f"\n📂 Loading detailed contents for referenced knowledge IDs: {list(referenced_ids)}...")
+    print(f"📂 Loading details for referenced knowledge IDs: {list(referenced_ids)}...")
     referenced_contents = []
     for ref_id in referenced_ids:
         unit = get_knowledge_unit_by_id(ref_id)
@@ -92,11 +115,10 @@ async def run_content_pipeline(topic: str):
 
     referenced_context_str = json.dumps(referenced_contents, indent=2)
 
-    # 4. Spawn the Copywriter Agent to write the grounded draft
+    # Spawn Copywriter Agent
     writer_config = get_copywriter_config()
     async with Agent(writer_config) as writer:
-        print("\n✍️ Step 4: Drafting content using validated brief and referenced knowledge...")
-        
+        print("\n✍️ Querying Copywriter Agent to draft copy...")
         prompt = (
             f"Validated Content Brief:\n"
             f"```json\n{json.dumps(brief_data, indent=2)}\n```\n\n"
@@ -113,8 +135,21 @@ async def run_content_pipeline(topic: str):
             sys.stdout.flush()
         print()
 
-    print("\n✅ Grounded Content pipeline run completed successfully!")
+    print("\n✅ Grounded Content writing completed successfully!")
+
+def main():
+    parser = argparse.ArgumentParser(description="Aether Content Factory Orchestrator CLI.")
+    parser.add_argument("--stage", choices=["brief", "write"], required=True, help="Execution stage to run.")
+    parser.add_argument("--topic", default="AI Design workflows", help="The topic for Stage 1 (Briefing).")
+    parser.add_argument("--output-brief", default="content/briefs/draft_brief.json", help="Path to write the brief draft.")
+    parser.add_argument("--brief", default="content/briefs/draft_brief.json", help="Path to input brief file for Stage 2.")
+    
+    args = parser.parse_args()
+    
+    if args.stage == "brief":
+        asyncio.run(run_stage_brief(args.topic, args.output_brief))
+    elif args.stage == "write":
+        asyncio.run(run_stage_write(args.brief))
 
 if __name__ == "__main__":
-    topic = "AI Design workflows"
-    asyncio.run(run_content_pipeline(topic))
+    main()

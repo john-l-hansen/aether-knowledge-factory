@@ -20,11 +20,24 @@ def clean_json_content(content: str) -> str:
         return match.group(1).strip()
     return content
 
+import datetime
+
+def serialize_dates(data: Any) -> Any:
+    """Recursively converts datetime.date and datetime.datetime objects to ISO string format."""
+    if isinstance(data, dict):
+        return {k: serialize_dates(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [serialize_dates(item) for item in data]
+    elif isinstance(data, (datetime.date, datetime.datetime)):
+        return data.isoformat()
+    return data
+
 def validate_data(data: Dict[str, Any], schema_name: str) -> Tuple[bool, Optional[str]]:
     """Validates a dictionary data structure against a schema file."""
     try:
         schema = load_schema(schema_name)
-        jsonschema.validate(instance=data, schema=schema)
+        serialized_data = serialize_dates(data)
+        jsonschema.validate(instance=serialized_data, schema=schema)
         return True, None
     except jsonschema.ValidationError as e:
         return False, f"Validation Error: {e.message} (path: {list(e.path)})"
