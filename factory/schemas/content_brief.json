@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ContentBrief",
+  "type": "object",
+  "properties": {
+    "topic": { "type": "string" },
+    "target_audience": { "type": "string" },
+    "key_takeaways": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "outline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "section_title": { "type": "string" },
+          "points": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "referenced_knowledge_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["section_title", "points"]
+      }
+    }
+  },
+  "required": ["topic", "target_audience", "key_takeaways", "outline"]
+}
