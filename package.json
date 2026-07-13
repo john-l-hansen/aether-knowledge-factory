@@ -1,0 +1,13 @@
+{
+  "name": "aether-knowledge-factory",
+  "version": "1.0.0",
+  "description": "Aether Knowledge Factory Dashboard",
+  "main": "dashboard_server.py",
+  "scripts": {
+    "build": "pip3 install -r requirements.txt",
+    "start": "python3 dashboard_server.py"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
