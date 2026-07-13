@@ -2,3 +2,4 @@ google-antigravity
 jsonschema
 PyYAML
 markdown
+requests

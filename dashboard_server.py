@@ -207,7 +207,8 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
 
 def main():
     parser = argparse.ArgumentParser(description="Aether Knowledge Factory Dashboard Local Server.")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind the server to.")
+    default_port = int(os.environ.get("PORT", 8000))
+    parser.add_argument("--port", type=int, default=default_port, help="Port to bind the server to.")
     args = parser.parse_args()
 
     server_address = ("", args.port)
