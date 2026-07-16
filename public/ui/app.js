@@ -170,7 +170,7 @@ function initIngest() {
     ingestBtn.disabled = true;
     ingestBtn.textContent = "Ingesting...";
     ingestOutput.style.display = "block";
-    ingestOutputText.textContent = "🧠 Processing raw input...\n";
+    ingestOutputText.innerHTML = "<span class='processing-pulse'>🧠 Processing raw input...</span>\n";
 
     try {
       const res = await fetch(`${API_BASE}/api/ingest`, {
@@ -180,14 +180,14 @@ function initIngest() {
       });
       const data = await res.json();
       if (data.success) {
-        ingestOutputText.textContent += `\nLogs:\n${data.logs}\n\n🎉 Completed! New draft units are now ready in 'Pending Review' tab.`;
+        ingestOutputText.innerHTML += `\nLogs:\n${escapeHtml(data.logs)}\n\n🎉 Completed! New draft units are now ready in 'Pending Review' tab.`;
         ingestInput.value = "";
         fetchDrafts();
       } else {
-        ingestOutputText.textContent += `\n❌ Error: ${data.error}`;
+        ingestOutputText.innerHTML += `\n❌ Error: ${escapeHtml(data.error)}`;
       }
     } catch (err) {
-      ingestOutputText.textContent += `\n❌ Failed connection: ${err}`;
+      ingestOutputText.innerHTML += `\n❌ Failed connection: ${escapeHtml(err)}`;
     } finally {
       ingestBtn.disabled = false;
       ingestBtn.textContent = "Extract Knowledge Units";
@@ -214,20 +214,20 @@ function initGenerator() {
     runBtn.disabled = true;
     runBtn.textContent = "Processing Stage 1 Briefing...";
     outputBox.style.display = "block";
-    outputText.textContent = "🚀 Starting briefing agent...\n";
+    outputText.innerHTML = "<span class='processing-pulse'>🚀 Starting briefing agent...</span>\n";
 
     try {
       const res = await fetch(`${API_BASE}/api/generate?topic=${encodeURIComponent(topic)}`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        outputText.textContent += `\nLogs:\n${data.logs}\n\n`;
-        outputText.textContent += `🎉 Success! Content Brief generated and saved.`;
+        outputText.innerHTML += `\nLogs:\n${escapeHtml(data.logs)}\n\n`;
+        outputText.innerHTML += `🎉 Success! Content Brief generated and saved.`;
         checkCurrentBrief();
       } else {
-        outputText.textContent += `\n❌ Pipeline Error: ${data.error}`;
+        outputText.innerHTML += `\n❌ Pipeline Error: ${escapeHtml(data.error)}`;
       }
     } catch (err) {
-      outputText.textContent += `\n❌ Failed to contact API server: ${err}`;
+      outputText.innerHTML += `\n❌ Failed to contact API server: ${escapeHtml(err)}`;
     } finally {
       runBtn.disabled = false;
       runBtn.textContent = "Compile Content Brief (Stage 1)";
@@ -257,19 +257,19 @@ function initGenerator() {
     runWriteBtn.disabled = true;
     runWriteBtn.textContent = "Assembling Draft...";
     outputBox.style.display = "block";
-    outputText.textContent = "✍️ Querying Copywriter and Publisher agents...\n";
+    outputText.innerHTML = "<span class='processing-pulse'>✍️ Querying Copywriter and Publisher agents...</span>\n";
 
     try {
       const res = await fetch(`${API_BASE}/api/write`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        outputText.textContent += `\nLogs:\n${data.logs}\n\n🎉 Success! Article assembled and saved under 'Webflow Publishing'.`;
+        outputText.innerHTML += `\nLogs:\n${escapeHtml(data.logs)}\n\n🎉 Success! Article assembled and saved under 'Webflow Publishing'.`;
         fetchPublications();
       } else {
-        outputText.textContent += `\n❌ Error: ${data.error}`;
+        outputText.innerHTML += `\n❌ Error: ${escapeHtml(data.error)}`;
       }
     } catch (err) {
-      outputText.textContent += `\n❌ Connection failed: ${err}`;
+      outputText.innerHTML += `\n❌ Connection failed: ${escapeHtml(err)}`;
     } finally {
       runWriteBtn.disabled = false;
       runWriteBtn.textContent = "Assemble Article (Stage 2)";
@@ -351,23 +351,24 @@ async function publishPublication(filePath) {
   const outputText = document.getElementById("publish-output-text");
 
   outputBox.style.display = "block";
-  outputText.textContent = `🚀 Publishing ${filePath} to live Webflow CMS...\n`;
+  outputText.innerHTML = `<span class='processing-pulse'>🚀 Publishing ${escapeHtml(filePath)} to live Webflow CMS...</span>\n`;
 
   try {
     const res = await fetch(`${API_BASE}/api/publish?file=${encodeURIComponent(filePath)}`, { method: "POST" });
     const data = await res.json();
     if (data.success) {
-      outputText.textContent += `\nLogs:\n${data.logs}\n\n🎉 Done! Content successfully published to live Webflow collection.`;
+      outputText.innerHTML += `\nLogs:\n${escapeHtml(data.logs)}\n\n🎉 Done! Content successfully published to live Webflow collection.`;
     } else {
-      outputText.textContent += `\n❌ Error: ${data.error}`;
+      outputText.innerHTML += `\n❌ Error: ${escapeHtml(data.error)}`;
     }
   } catch (err) {
-    outputText.textContent += `\n❌ Connection failed: ${err}`;
+    outputText.innerHTML += `\n❌ Connection failed: ${escapeHtml(err)}`;
   }
 }
 
 // Helpers
 function escapeHtml(str) {
+  if (typeof str !== 'string') str = String(str || '');
   return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
